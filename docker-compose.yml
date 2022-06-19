@@ -1,0 +1,46 @@
+# version is now using "compose spec"
+# v2 and v3 are now combined!
+# docker-compose v1.27+ required
+
+services:
+  frontend:
+    image: frontend 
+    ports:
+      - "5000:5000"
+    networks:
+      - net
+
+  backend:
+    image: backend
+    depends_on:
+      - db
+      - redis
+    networks:
+      - net
+
+  dashboard:
+    image: dashboard
+    depends_on:
+      - db
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - net
+
+  redis:
+    image: redis
+    networks:
+      - net
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    depends_on:
+      - redis
+    networks:
+      - net
+networks:
+  net:

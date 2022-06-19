@@ -1,0 +1,74 @@
+version: "3"
+services:
+
+  redis:
+    image: redis:alpine
+    networks:
+      - net
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    networks:
+      - net
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  frontend:
+    image: thecloudworld/poll-frontend
+    ports:
+      - 5000:5000
+    networks:
+      - net
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+      restart_policy:
+        condition: on-failure
+  dashboard:
+    image: thecloudworld/poll-dashboard
+    ports:
+      - 3000:3000
+    networks:
+      - net
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  backend:
+    image: thecloudworld/poll-backend
+    networks:
+      - net
+    depends_on:
+      - db
+      - redis
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels: [APP=POLL]
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints: [node.role == manager]
+networks:
+  net:
